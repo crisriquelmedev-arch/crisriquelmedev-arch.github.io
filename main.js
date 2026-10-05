@@ -302,6 +302,8 @@ function updateReveals() {
   const compact = window.innerWidth <= 700;
   const travel = compact ? 64 : 130;
   const range = Math.min(viewport * 0.42, 360);
+  const page = document.scrollingElement || document.documentElement;
+  const remaining = Math.max(0, page.scrollHeight - viewport - window.scrollY);
   // Horizontal translation does not alter these vertical measurements.
   const positions = revealTargets.map(({ element }) => element.getBoundingClientRect());
   revealTargets.forEach(({ element, side, hero }, index) => {
@@ -311,7 +313,10 @@ function updateReveals() {
       return;
     }
     const { top, bottom, height } = positions[index];
-    const enter = Math.max(0, Math.min(1, (viewport - top - 24) / range));
+    // Shorten the entrance when the document ends before its usual finish point.
+    const distance = viewport - top - Math.min(24, remaining);
+    const availableRange = Math.max(1, Math.min(range, distance + remaining));
+    const enter = Math.max(0, Math.min(1, distance / availableRange));
     const leave = Math.max(0, Math.min(1, (bottom - headerBottom) / Math.max(1, Math.min(range, height))));
     // Hero also recedes as it leaves the top; other content stays solid while read.
     const progress = hero ? Math.min(enter, leave) : enter;
