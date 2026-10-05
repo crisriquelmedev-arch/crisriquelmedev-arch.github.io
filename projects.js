@@ -1,6 +1,42 @@
 // Añade aquí cada proyecto. Solo incorpora enlaces reales cuando estén disponibles.
 window.portfolioProjects = [
- {number:'01',title:'TaskOps',subtitle:'Del backlog a una API.',category:'BACKEND / IDEA DE PROYECTO',kind:'api',description:'Una API de gestión de tareas como proyecto de aprendizaje: trabajar la lógica de negocio, la persistencia y las pruebas, y después explorar su despliegue.',next:'Definir un alcance pequeño, modelar las tareas y construir el primer endpoint con persistencia.',tags:['Java','Spring Boot','Base de datos','Tests'],code:'GET /api/tasks',label:'LÓGICA QUE CONECTA'},
- {number:'02',title:'Dashboard Metrics',subtitle:'Hacer visibles los datos.',category:'WEB / IDEA DE PROYECTO',kind:'metrics',description:'Un panel para explorar la conexión entre una interfaz clara, un backend en PHP y una base de datos MySQL. Una oportunidad para practicar la visualización de información y el entorno de ejecución.',next:'Elegir las métricas, definir su origen y crear una primera vista conectada a datos de prueba.',tags:['PHP','MySQL','Nginx','Docker'],code:'data → insight',label:'INFORMACIÓN CON CONTEXTO'},
- {number:'03',title:'RunningApp',subtitle:'Cada sesión, un aprendizaje.',category:'SOFTWARE / IDEA DE PROYECTO',kind:'running',description:'Una aplicación de registro de entrenamientos para explorar C# a través de un tema cercano. El objetivo inicial: guardar sesiones y consultar el historial de forma sencilla.',next:'Definir los datos de una sesión y desarrollar las operaciones de registro y consulta.',tags:['C#','Modelado','Persistencia'],code:'session.add(run)',label:'CONSTANCIA EN MOVIMIENTO'}
+  {
+    number: '01',
+    title: 'TaskOps',
+    subtitle: 'Del backlog a una API.',
+    category: 'BACKEND / IDEA DE PROYECTO',
+    kind: 'api',
+    description:
+      'Una API de gestión de tareas como proyecto de aprendizaje: trabajar la lógica de negocio, la persistencia y las pruebas, y después explorar su despliegue.',
+    next: 'Definir un alcance pequeño, modelar las tareas y construir el primer endpoint con persistencia.',
+    tags: ['Java', 'Spring Boot', 'Base de datos', 'Tests'],
+    code: 'GET /api/tasks',
+    label: 'LÓGICA QUE CONECTA'
+  },
+  {
+    number: '02',
+    title: 'Dashboard Metrics',
+    subtitle: 'Hacer visibles los datos.',
+    category: 'WEB / IDEA DE PROYECTO',
+    kind: 'metrics',
+    description:
+      'Un panel para explorar la conexión entre una interfaz clara, un backend en PHP y una base de datos MySQL. Una oportunidad para practicar la visualización de información y el entorno de ejecución.',
+    next: 'Elegir las métricas, definir su origen y crear una primera vista conectada a datos de prueba.',
+    tags: ['PHP', 'MySQL', 'Nginx', 'Docker'],
+    code: 'data → insight',
+    label: 'INFORMACIÓN CON CONTEXTO'
+  },
+  {
+    number: '03',
+    title: 'RunningApp',
+    subtitle: 'Cada sesión, un aprendizaje.',
+    category: 'SOFTWARE / IDEA DE PROYECTO',
+    kind: 'running',
+    description:
+      'Una aplicación de registro de entrenamientos para explorar C# a través de un tema cercano. El objetivo inicial: guardar sesiones y consultar el historial de forma sencilla.',
+    next: 'Definir los datos de una sesión y desarrollar las operaciones de registro y consulta.',
+    tags: ['C#', 'Modelado', 'Persistencia'],
+    code: 'session.add(run)',
+    label: 'CONSTANCIA EN MOVIMIENTO'
+  }
 ];
