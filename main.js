@@ -282,53 +282,48 @@ new MutationObserver(() =>
   document.body.classList.toggle('dialog-open', dialog.open)
 ).observe(dialog, { attributes: true, attributeFilter: ['open'] });
 
-// Replay a subtle entrance from either edge without hiding readable content.
-const entrances = new Map();
-const revealTargets = document.querySelectorAll(
+// Tie section entrances to scroll position so they reverse naturally on return.
+const revealTargets = [...document.querySelectorAll(
   '.section-heading, .project, .about-title, .about-copy, ' +
     '.stack-heading, .stack-row, .contact > div, .footer-top, .footer-name'
-);
-function stopEntrances() {
-  if (!paused && !reduce.matches) return;
-  entrances.forEach((animation) => animation.cancel());
-  entrances.clear();
+)].map((element) => ({ element, offset: 0 }));
+let revealFrame = 0;
+function updateReveals() {
+  revealFrame = 0;
+  const viewport = window.innerHeight;
+  const headerBottom = document.querySelector('header').getBoundingClientRect().bottom;
+  const compact = window.innerWidth <= 700;
+  const travel = compact ? 26 : 44;
+  const range = Math.min(viewport * 0.26, 220);
+  // Measure all elements before writing styles; subtract our visual displacement.
+  const positions = revealTargets.map(({ element, offset }) => {
+    const rect = element.getBoundingClientRect();
+    return { top: rect.top - offset, bottom: rect.bottom - offset };
+  });
+  revealTargets.forEach((item, index) => {
+    const { element } = item;
+    if (paused || reduce.matches) {
+      element.style.removeProperty('translate');
+      element.style.removeProperty('opacity');
+      item.offset = 0;
+      return;
+    }
+    const { top, bottom } = positions[index];
+    const enter = Math.max(0, Math.min(1, (viewport - top) / range));
+    const leave = Math.max(0, Math.min(1, (bottom - headerBottom) / range));
+    const progress = Math.min(enter, leave);
+    // Smoothstep keeps the fully visible reading area still and legible.
+    const eased = progress * progress * (3 - 2 * progress);
+    item.offset = (enter < leave ? 1 : -1) * travel * (1 - eased);
+    element.style.translate = `0 ${item.offset.toFixed(2)}px`;
+    element.style.opacity = (0.12 + 0.88 * eased).toFixed(3);
+  });
 }
-if ('IntersectionObserver' in window) {
-  const revealObserver = new IntersectionObserver(
-    (entries) => {
-      const compact = window.innerWidth <= 700;
-      const headerBottom = document
-        .querySelector('header')
-        .getBoundingClientRect().bottom;
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) {
-          entrances.get(entry.target)?.cancel();
-          entrances.delete(entry.target);
-          return;
-        }
-        if (paused || reduce.matches || !entry.target.animate) return;
-        const fromAbove = entry.boundingClientRect.top < headerBottom;
-        const offset = (compact ? 10 : 20) * (fromAbove ? -1 : 1);
-        entrances.get(entry.target)?.cancel();
-        const animation = entry.target.animate(
-          [
-            { opacity: 0.65, transform: `translateY(${offset}px)` },
-            { opacity: 1, transform: 'translateY(0)' }
-          ],
-          {
-            duration: compact ? 360 : 550,
-            easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
-          }
-        );
-        entrances.set(entry.target, animation);
-        animation.onfinish = () => {
-          if (entrances.get(entry.target) === animation)
-            entrances.delete(entry.target);
-        };
-      });
-    },
-    { threshold: 0, rootMargin: '-96px 0px 0px 0px' }
-  );
-  revealTargets.forEach((element) => revealObserver.observe(element));
+function requestReveals() {
+  if (!revealFrame) revealFrame = requestAnimationFrame(updateReveals);
 }
-document.addEventListener('portfolio-motion-change', stopEntrances);
+window.addEventListener('scroll', requestReveals, { passive: true });
+window.addEventListener('resize', requestReveals);
+document.addEventListener('portfolio-motion-change', requestReveals);
+document.fonts.ready.then(requestReveals);
+requestReveals();
