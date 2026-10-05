@@ -282,48 +282,66 @@ new MutationObserver(() =>
   document.body.classList.toggle('dialog-open', dialog.open)
 ).observe(dialog, { attributes: true, attributeFilter: ['open'] });
 
-// Tie section entrances to scroll position so they reverse naturally on return.
+// Horizontal entrances follow viewport progress and rewind when scrolling back.
 const revealTargets = [...document.querySelectorAll(
-  '.section-heading, .project, .about-title, .about-copy, ' +
-    '.stack-heading, .stack-row, .contact > div, .footer-top, .footer-name'
-)].map((element) => ({ element, offset: 0 }));
+  '.hero .eyebrow, .hero h1, .hero-bottom > *, .hero-foot, ' +
+    '.section-heading > *, .project-visual, .project-info, ' +
+    '.about-title, .about-copy, .stack > .kicker, .stack-heading > *, ' +
+    '.stack-row, .contact > div, .footer-top, .footer-name, .footer-bottom'
+)].map((element, index) => ({
+  element,
+  side: index % 2 === 0 ? -1 : 1,
+  hero: Boolean(element.closest('.hero'))
+}));
 let revealFrame = 0;
+const heroEntrances = [];
 function updateReveals() {
   revealFrame = 0;
   const viewport = window.innerHeight;
   const headerBottom = document.querySelector('header').getBoundingClientRect().bottom;
   const compact = window.innerWidth <= 700;
-  const travel = compact ? 26 : 44;
-  const range = Math.min(viewport * 0.26, 220);
-  // Measure all elements before writing styles; subtract our visual displacement.
-  const positions = revealTargets.map(({ element, offset }) => {
-    const rect = element.getBoundingClientRect();
-    return { top: rect.top - offset, bottom: rect.bottom - offset };
-  });
-  revealTargets.forEach((item, index) => {
-    const { element } = item;
-    if (paused || reduce.matches) {
+  const travel = compact ? 64 : 130;
+  const range = Math.min(viewport * 0.42, 360);
+  // Horizontal translation does not alter these vertical measurements.
+  const positions = revealTargets.map(({ element }) => element.getBoundingClientRect());
+  revealTargets.forEach(({ element, side, hero }, index) => {
+    if (reduce.matches || element.contains(document.activeElement)) {
       element.style.removeProperty('translate');
       element.style.removeProperty('opacity');
-      item.offset = 0;
       return;
     }
     const { top, bottom } = positions[index];
-    const enter = Math.max(0, Math.min(1, (viewport - top) / range));
+    const enter = Math.max(0, Math.min(1, (viewport - top - 24) / range));
     const leave = Math.max(0, Math.min(1, (bottom - headerBottom) / range));
-    const progress = Math.min(enter, leave);
-    // Smoothstep keeps the fully visible reading area still and legible.
-    const eased = progress * progress * (3 - 2 * progress);
-    item.offset = (enter < leave ? 1 : -1) * travel * (1 - eased);
-    element.style.translate = `0 ${item.offset.toFixed(2)}px`;
-    element.style.opacity = (0.12 + 0.88 * eased).toFixed(3);
+    // Hero also recedes as it leaves the top; other content stays solid while read.
+    const progress = hero ? Math.min(enter, leave) : enter;
+    const eased = 1 - Math.pow(1 - progress, 3);
+    element.style.translate = `${(side * travel * (1 - eased)).toFixed(2)}px 0`;
+    element.style.opacity = eased.toFixed(3);
   });
 }
 function requestReveals() {
   if (!revealFrame) revealFrame = requestAnimationFrame(updateReveals);
 }
+if (!reduce.matches) {
+  revealTargets.filter(({ hero }) => hero).forEach(({ element, side }, index) => {
+    const animation = element.animate(
+      [
+        { transform: `translateX(${side * (window.innerWidth <= 700 ? 64 : 130)}px)`, opacity: 0 },
+        { transform: 'translateX(0)', opacity: 1 }
+      ],
+      { duration: 1000, delay: index * 110, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }
+    );
+    heroEntrances.push(animation);
+  });
+}
+reduce.addEventListener('change', () => {
+  heroEntrances.forEach((animation) => animation.cancel());
+  requestReveals();
+});
 window.addEventListener('scroll', requestReveals, { passive: true });
 window.addEventListener('resize', requestReveals);
-document.addEventListener('portfolio-motion-change', requestReveals);
+document.addEventListener('focusin', requestReveals);
+document.addEventListener('focusout', requestReveals);
 document.fonts.ready.then(requestReveals);
 requestReveals();

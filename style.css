@@ -970,3 +970,8 @@ nav a[aria-current='location']::after {
   cursor: default;
   opacity: 0.65;
 }
+
+/* Contain lateral entrances without creating a horizontal scrollbar. */
+main {
+  overflow-x: clip;
+}
