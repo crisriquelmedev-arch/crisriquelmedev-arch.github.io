@@ -310,9 +310,9 @@ function updateReveals() {
       element.style.removeProperty('opacity');
       return;
     }
-    const { top, bottom } = positions[index];
+    const { top, bottom, height } = positions[index];
     const enter = Math.max(0, Math.min(1, (viewport - top - 24) / range));
-    const leave = Math.max(0, Math.min(1, (bottom - headerBottom) / range));
+    const leave = Math.max(0, Math.min(1, (bottom - headerBottom) / Math.max(1, Math.min(range, height))));
     // Hero also recedes as it leaves the top; other content stays solid while read.
     const progress = hero ? Math.min(enter, leave) : enter;
     const eased = 1 - Math.pow(1 - progress, 3);
