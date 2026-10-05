@@ -965,3 +965,8 @@ nav a[aria-current='location']::after {
     scroll-padding-top: 135px;
   }
 }
+
+.play-caption button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}

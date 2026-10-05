@@ -73,12 +73,22 @@ let paused = reduce.matches,
   w = 1,
   h = 1,
   phase = 0,
+  scrollPhase = 0,
+  scrollTarget = 0,
   pointer = { x: 0, y: 0 },
   target = { x: 0, y: 0 };
 const motion = document.getElementById('motion');
 function sync() {
-  motion.textContent = paused ? 'Activar movimiento' : 'Pausar movimiento';
+  if (reduce.matches) paused = true;
+  motion.textContent = reduce.matches
+    ? 'Movimiento reducido'
+    : paused
+      ? 'Activar movimiento'
+      : 'Pausar movimiento';
+  motion.disabled = reduce.matches;
   document.body.classList.toggle('paused', paused);
+  document.dispatchEvent(new Event('portfolio-motion-change'));
+  updateSceneScroll();
   if (typeof schedule === 'function') schedule();
 }
 sync();
@@ -98,7 +108,17 @@ function resize() {
   canvas.width = Math.round(w * d);
   canvas.height = Math.round(h * d);
   ctx.setTransform(d, 0, 0, d, 0, 0);
+  updateSceneScroll();
   schedule();
+}
+function updateSceneScroll() {
+  if (paused || reduce.matches) return;
+  const rect = canvas.getBoundingClientRect();
+  const distance = window.innerHeight / 2 - (rect.top + rect.height / 2);
+  const strength = window.innerWidth <= 700 ? 0.45 : 0.9;
+  scrollTarget =
+    Math.max(-1, Math.min(1, distance / window.innerHeight)) * strength;
+  if (visible && !document.hidden) schedule();
 }
 new ResizeObserver(resize).observe(canvas);
 canvas.addEventListener('pointermove', (e) => {
@@ -136,10 +156,11 @@ function draw(time) {
     phase += 0.005 * delta;
     pointer.x += (target.x - pointer.x) * 0.04;
     pointer.y += (target.y - pointer.y) * 0.04;
+    scrollPhase += (scrollTarget - scrollPhase) * 0.08 * delta;
   }
   ctx.clearRect(0, 0, w, h);
   const s = Math.min(w * 0.105, h * 0.3),
-    a = phase + pointer.x * 0.9,
+    a = phase + pointer.x * 0.9 + scrollPhase,
     b = pointer.y * 22;
   ctx.fillStyle = '#d1d3cb';
   for (let x = 22; x < w; x += 30)
@@ -231,6 +252,7 @@ const navSections = navLinks.map((a) =>
 let scrollPending = false;
 function updateNavigation() {
   scrollPending = false;
+  updateSceneScroll();
   let current = null;
   for (const section of navSections) {
     if (section.getBoundingClientRect().top <= window.innerHeight * 0.38)
@@ -259,3 +281,54 @@ dialog.addEventListener('close', () =>
 new MutationObserver(() =>
   document.body.classList.toggle('dialog-open', dialog.open)
 ).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+
+// Replay a subtle entrance from either edge without hiding readable content.
+const entrances = new Map();
+const revealTargets = document.querySelectorAll(
+  '.section-heading, .project, .about-title, .about-copy, ' +
+    '.stack-heading, .stack-row, .contact > div, .footer-top, .footer-name'
+);
+function stopEntrances() {
+  if (!paused && !reduce.matches) return;
+  entrances.forEach((animation) => animation.cancel());
+  entrances.clear();
+}
+if ('IntersectionObserver' in window) {
+  const revealObserver = new IntersectionObserver(
+    (entries) => {
+      const compact = window.innerWidth <= 700;
+      const headerBottom = document
+        .querySelector('header')
+        .getBoundingClientRect().bottom;
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) {
+          entrances.get(entry.target)?.cancel();
+          entrances.delete(entry.target);
+          return;
+        }
+        if (paused || reduce.matches || !entry.target.animate) return;
+        const fromAbove = entry.boundingClientRect.top < headerBottom;
+        const offset = (compact ? 10 : 20) * (fromAbove ? -1 : 1);
+        entrances.get(entry.target)?.cancel();
+        const animation = entry.target.animate(
+          [
+            { opacity: 0.65, transform: `translateY(${offset}px)` },
+            { opacity: 1, transform: 'translateY(0)' }
+          ],
+          {
+            duration: compact ? 360 : 550,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+          }
+        );
+        entrances.set(entry.target, animation);
+        animation.onfinish = () => {
+          if (entrances.get(entry.target) === animation)
+            entrances.delete(entry.target);
+        };
+      });
+    },
+    { threshold: 0, rootMargin: '-96px 0px 0px 0px' }
+  );
+  revealTargets.forEach((element) => revealObserver.observe(element));
+}
+document.addEventListener('portfolio-motion-change', stopEntrances);
